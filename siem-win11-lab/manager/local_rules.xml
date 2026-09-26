@@ -1,0 +1,69 @@
+<!--
+  Reglas de detección de cryptojacking (proyecto siem-win11-lab).
+  Ubicación en el manager: /var/ossec/etc/rules/local_rules.xml
+  Aplicar: sudo systemctl restart wazuh-manager
+
+  Wazuh compara texto, no números: cada umbral es una expresión regular anclada.
+  El script del agente convierte todas las métricas a enteros para que funcionen.
+-->
+<group name="perf_monitor,">
+
+  <!-- Regla base: nivel 0, no alerta, solo clasifica la telemetría -->
+  <rule id="100100" level="0">
+    <decoded_as>json</decoded_as>
+    <field name="integration">perf_monitor</field>
+    <description>Telemetría de rendimiento recibida</description>
+  </rule>
+
+  <!-- CPU elevada: 80-94 % -->
+  <rule id="100101" level="5">
+    <if_sid>100100</if_sid>
+    <field name="cpu_pct" type="pcre2">^(8[0-9]|9[0-4])$</field>
+    <description>CPU elevada: $(cpu_pct)% - proceso dominante: $(top_proc)</description>
+    <group>cpu_high,</group>
+  </rule>
+
+  <!-- CPU crítica: 95-100 % -->
+  <rule id="100102" level="8">
+    <if_sid>100100</if_sid>
+    <field name="cpu_pct" type="pcre2">^(9[5-9]|100)$</field>
+    <description>CPU crítica: $(cpu_pct)% - proceso dominante: $(top_proc)</description>
+    <group>cpu_high,</group>
+  </rule>
+
+  <!-- Memoria: menos de 1000 MB libres (1 a 3 dígitos) -->
+  <rule id="100103" level="5">
+    <if_sid>100100</if_sid>
+    <field name="mem_free_mb" type="pcre2">^[0-9]{1,3}$</field>
+    <description>Memoria disponible baja: $(mem_free_mb) MB</description>
+  </rule>
+
+  <!-- Disco: actividad igual o superior al 90 % -->
+  <rule id="100104" level="5">
+    <if_sid>100100</if_sid>
+    <field name="disk_pct" type="pcre2">^(9[0-9]|100|[1-9][0-9]{2,})$</field>
+    <description>Actividad de disco muy alta: $(disk_pct)% - $(disk_kbps) KB/s</description>
+  </rule>
+
+  <!-- Red: 10 000 KB/s o más (5 dígitos o más) -->
+  <rule id="100105" level="5">
+    <if_sid>100100</if_sid>
+    <field name="net_kbps" type="pcre2">^[0-9]{5,}$</field>
+    <description>Tráfico de red elevado: $(net_kbps) KB/s</description>
+  </rule>
+
+  <!--
+    Correlación: 5 muestras de CPU alta (grupo cpu_high = 100101 o 100102)
+    del MISMO proceso en 600 s. Con muestreo cada 60 s = ~5 min sostenidos.
+    v1.1: antes solo contaba la 100102, pero en la VM la CPU no pasaba del 91 %.
+  -->
+  <rule id="100110" level="12" frequency="5" timeframe="600">
+    <if_matched_group>cpu_high</if_matched_group>
+    <same_field>top_proc</same_field>
+    <description>Posible cryptominer: CPU alta sostenida por $(top_proc)</description>
+    <mitre>
+      <id>T1496</id>
+    </mitre>
+  </rule>
+
+</group>

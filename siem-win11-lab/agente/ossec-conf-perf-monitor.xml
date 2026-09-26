@@ -1,0 +1,29 @@
+<!--
+  Bloque para el ossec.conf del agente Windows:
+  C:\Program Files (x86)\ossec-agent\ossec.conf
+
+  Se puede pegar dentro del <ossec_config> existente o añadir tal cual al final
+  del fichero (Wazuh admite varios bloques <ossec_config>). instalar-agente.ps1
+  lo hace automáticamente.
+
+  - wodle: solo ejecuta el script cada 60 s (ignore_output=yes evita duplicados).
+  - localfile: lee perf-monitor.log y lo envía al manager como JSON.
+  - Ruta completa a PowerShell de 64 bits: el agente es de 32 bits y, sin ruta,
+    Windows podría redirigirlo al PowerShell de 32 bits (WOW64).
+-->
+<ossec_config>
+  <wodle name="command">
+    <disabled>no</disabled>
+    <tag>perf-monitor</tag>
+    <command>C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe -ExecutionPolicy Bypass -File "C:\Program Files (x86)\ossec-agent\perf-monitor.ps1"</command>
+    <interval>60s</interval>
+    <ignore_output>yes</ignore_output>
+    <run_on_start>yes</run_on_start>
+    <timeout>30</timeout>
+  </wodle>
+
+  <localfile>
+    <location>C:\Program Files (x86)\ossec-agent\perf-monitor.log</location>
+    <log_format>json</log_format>
+  </localfile>
+</ossec_config>

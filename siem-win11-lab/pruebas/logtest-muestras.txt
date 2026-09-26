@@ -1,0 +1,25 @@
+# Muestras para validar las reglas con wazuh-logtest (en el manager):
+#   sudo /var/ossec/bin/wazuh-logtest
+# Pegar cada línea JSON (sin el comentario) y comprobar la regla que responde.
+# Si una muestra cae en la 100100 o en ninguna, el fallo está en el matching del campo.
+
+# 100100 - telemetría normal (nivel 0, sin alerta)
+{"integration":"perf_monitor","cpu_pct":12,"mem_used_pct":45,"mem_free_mb":4200,"disk_pct":3,"disk_kbps":50,"net_kbps":40,"top_proc":"explorer","top_proc_cpu":2}
+
+# 100101 - CPU elevada (80-94 %)
+{"integration":"perf_monitor","cpu_pct":85,"mem_used_pct":45,"mem_free_mb":4200,"disk_pct":3,"disk_kbps":50,"net_kbps":40,"top_proc":"powershell","top_proc_cpu":480}
+
+# 100102 - CPU crítica (95-100 %)
+{"integration":"perf_monitor","cpu_pct":97,"mem_used_pct":72,"mem_free_mb":850,"disk_pct":12,"disk_kbps":400,"net_kbps":120,"top_proc":"xmrig","top_proc_cpu":95}
+
+# 100103 - memoria libre < 1000 MB
+{"integration":"perf_monitor","cpu_pct":20,"mem_used_pct":90,"mem_free_mb":850,"disk_pct":3,"disk_kbps":50,"net_kbps":40,"top_proc":"chrome","top_proc_cpu":10}
+
+# 100104 - disco >= 90 %
+{"integration":"perf_monitor","cpu_pct":20,"mem_used_pct":45,"mem_free_mb":4200,"disk_pct":95,"disk_kbps":80000,"net_kbps":40,"top_proc":"powershell","top_proc_cpu":15}
+
+# 100105 - red >= 10 000 KB/s
+{"integration":"perf_monitor","cpu_pct":20,"mem_used_pct":45,"mem_free_mb":4200,"disk_pct":3,"disk_kbps":50,"net_kbps":15000,"top_proc":"powershell","top_proc_cpu":15}
+
+# 100110 - correlación: pegar la muestra de 100101 o 100102 cinco veces seguidas
+# en la misma sesión de wazuh-logtest (mismo top_proc). La quinta debe responder 100110.
